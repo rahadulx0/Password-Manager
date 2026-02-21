@@ -1,29 +1,30 @@
-import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import dns from 'dns';
 
-// Force IPv4 — Render does not support IPv6 outbound connections
-dns.setDefaultResultOrder('ipv4first');
+const RESEND_API_URL = 'https://api.resend.com/emails';
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_SMTP_Name,
-    pass: process.env.GMAIL_SMTP_Password,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
+async function sendEmail({ to, subject, html }) {
+  const res = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: 'Vault <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    }),
+  });
 
-// Verify SMTP connection on startup
-transporter.verify().then(() => {
-  console.log('SMTP connection verified — ready to send emails');
-}).catch((err) => {
-  console.error('SMTP connection error:', err.message);
-});
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to send email');
+  }
+
+  return res.json();
+}
 
 export function generateOtp() {
   return crypto.randomInt(100000, 999999).toString();
@@ -69,8 +70,7 @@ export async function sendOtpEmail(to, code, purpose) {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"Vault" <${process.env.GMAIL_SMTP_Name}>`,
+  await sendEmail({
     to,
     subject: config.subject,
     html,
