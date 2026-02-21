@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm create:*)",
+      "Bash(timeout 10 node:*)",
+      "Bash(nslookup:*)",
+      "Bash(npx vite build)",
+      "Bash(npx tailwindcss --help:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(fuser:*)"
+    ]
+  }
+}
