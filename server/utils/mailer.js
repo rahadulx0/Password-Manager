@@ -12,7 +12,7 @@ async function sendEmail({ to, subject, html }) {
     },
     body: JSON.stringify({
       from: 'Vault <onboarding@resend.dev>',
-      to,
+      to: Array.isArray(to) ? to : [to],
       subject,
       html,
     }),
@@ -40,11 +40,6 @@ const EMAIL_CONFIG = {
     subject: 'Reset your password - Vault',
     heading: 'Password Reset',
     message: 'Use the code below to reset your password.',
-  },
-  login: {
-    subject: 'Sign-in verification - Vault',
-    heading: '2-Step Verification',
-    message: 'Use the code below to complete your sign-in.',
   },
   'email-change': {
     subject: 'Verify your new email - Vault',

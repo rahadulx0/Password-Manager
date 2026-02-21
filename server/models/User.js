@@ -30,10 +30,6 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 8,
   },
-  twoFactorEnabled: {
-    type: Boolean,
-    default: false,
-  },
   categories: [{
     value: { type: String, required: true },
     label: { type: String, required: true },

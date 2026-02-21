@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  User, AtSign, Mail, Lock, Shield, ShieldCheck, ShieldOff,
+  User, AtSign, Mail, Lock,
   Eye, EyeOff, Sun, Moon, LogOut, Trash2, Pencil, X, Check,
   ArrowRight, AlertTriangle, Download, Upload, Plus, Tag, ChevronDown,
 } from 'lucide-react';
@@ -40,12 +40,6 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
-
-  // 2FA
-  const [show2FA, setShow2FA] = useState(false);
-  const [twoFAPw, setTwoFAPw] = useState('');
-  const [show2FAPw, setShow2FAPw] = useState(false);
-  const [twoFALoading, setTwoFALoading] = useState(false);
 
   // Delete account
   const [showDelete, setShowDelete] = useState(false);
@@ -252,34 +246,6 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
       toast.error(err.message);
     } finally {
       setPwLoading(false);
-    }
-  }
-
-  // ─── 2FA Toggle ─────────────────────────────────────────
-
-  async function handleToggle2FA(e) {
-    e.preventDefault();
-    if (!twoFAPw) {
-      toast.error('Password is required');
-      return;
-    }
-    setTwoFALoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/user/two-factor`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ enabled: !user?.twoFactorEnabled, password: twoFAPw }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      updateUser({ ...user, twoFactorEnabled: data.twoFactorEnabled });
-      toast.success(data.message);
-      setShow2FA(false);
-      setTwoFAPw('');
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setTwoFALoading(false);
     }
   }
 
@@ -815,62 +781,6 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
             )}
           </div>
 
-          {/* 2-Step Verification */}
-          <div>
-            <button
-              onClick={() => { setShow2FA(!show2FA); setTwoFAPw(''); }}
-              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <div className="text-left">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">2-Step Verification</span>
-                  <span className={`text-xs ${user?.twoFactorEnabled ? 'text-green-500' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {user?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-              </div>
-              <div className={`w-12 h-7 rounded-full p-1 transition-colors ${user?.twoFactorEnabled ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${user?.twoFactorEnabled ? 'translate-x-5' : ''}`} />
-              </div>
-            </button>
-
-            {show2FA && (
-              <form onSubmit={handleToggle2FA} className="px-4 pb-4 space-y-3 animate-scale-in">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {user?.twoFactorEnabled
-                    ? 'Enter your password to disable 2-step verification.'
-                    : 'Enter your password to enable 2-step verification. You\'ll need to verify a code sent to your email each time you sign in.'}
-                </p>
-                <PasswordInput
-                  value={twoFAPw}
-                  onChange={setTwoFAPw}
-                  show={show2FAPw}
-                  onToggle={() => setShow2FAPw(!show2FAPw)}
-                  placeholder="Password"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="submit"
-                  disabled={twoFALoading}
-                  className={`w-full py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
-                    user?.twoFactorEnabled
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-green-500 hover:bg-green-600'
-                  }`}
-                >
-                  {twoFALoading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {user?.twoFactorEnabled ? <ShieldOff className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                      {user?.twoFactorEnabled ? 'Disable' : 'Enable'}
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       </div>
 

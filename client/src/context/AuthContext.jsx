@@ -45,12 +45,7 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
-  const logout = useCallback((reason) => {
-    if (reason === 'inactivity') {
-      localStorage.setItem('inactivityLogout', 'true');
-    } else {
-      localStorage.removeItem('inactivityLogout');
-    }
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);

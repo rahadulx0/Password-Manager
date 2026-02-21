@@ -47,7 +47,6 @@ router.put('/profile', async (req, res) => {
       name: user.name,
       username: user.username,
       email: user.email,
-      twoFactorEnabled: user.twoFactorEnabled,
       categories: user.categories || [],
     });
   } catch (err) {
@@ -140,7 +139,6 @@ router.post('/change-email/verify', async (req, res) => {
       name: user.name,
       username: user.username,
       email: user.email,
-      twoFactorEnabled: user.twoFactorEnabled,
       categories: user.categories || [],
     });
   } catch (err) {
@@ -176,37 +174,6 @@ router.put('/change-password', async (req, res) => {
     res.json({ message: 'Password changed successfully' });
   } catch (err) {
     console.error('Change password error:', err.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// ─── Toggle 2FA ─────────────────────────────────────────
-
-router.put('/two-factor', async (req, res) => {
-  try {
-    const { enabled, password } = req.body;
-
-    if (typeof enabled !== 'boolean' || !password) {
-      return res.status(400).json({ message: 'Enabled status and password are required' });
-    }
-
-    const user = await User.findById(req.userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Incorrect password' });
-    }
-
-    user.twoFactorEnabled = enabled;
-    await user.save();
-
-    res.json({
-      message: enabled ? '2-step verification enabled' : '2-step verification disabled',
-      twoFactorEnabled: user.twoFactorEnabled,
-    });
-  } catch (err) {
-    console.error('Toggle 2FA error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
