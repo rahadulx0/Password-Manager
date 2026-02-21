@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, Copy, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SignIn() {
@@ -34,13 +34,16 @@ export default function SignIn() {
     e.preventDefault();
     setLoading(true);
     try {
+      const isInactivityReturn = localStorage.getItem('inactivityLogout') === 'true';
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, skipOtp: isInactivityReturn }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+
+      localStorage.removeItem('inactivityLogout');
 
       if (data.requires2FA) {
         toast.success('Verification code sent!');
@@ -171,15 +174,6 @@ export default function SignIn() {
 
   function handlePasswordChange(e) {
     setPassword(e.target.value);
-    passwordRef.current?.blur();
-  }
-
-  function copyToClipboard(text, label) {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success(`${label} copied!`);
-    }).catch(() => {
-      toast.error('Failed to copy');
-    });
   }
 
   return (
@@ -216,8 +210,8 @@ export default function SignIn() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 animate-scale-in">
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
+              <div>
+                <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
@@ -229,18 +223,10 @@ export default function SignIn() {
                     autoComplete="email"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(email, 'Email')}
-                  className="flex-shrink-0 p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400 hover:text-primary-500 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all"
-                  title="Copy email"
-                >
-                  <Copy className="w-5 h-5" />
-                </button>
               </div>
 
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
+              <div>
+                <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     ref={passwordRef}
@@ -260,14 +246,6 @@ export default function SignIn() {
                     {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(password, 'Password')}
-                  className="flex-shrink-0 p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400 hover:text-primary-500 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all"
-                  title="Copy password"
-                >
-                  <Copy className="w-5 h-5" />
-                </button>
               </div>
 
               <div className="text-right">

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Search, Plus, Key, Star, Shield, Settings as SettingsIcon,
-  Sun, Moon, LogOut, Menu, X, ChevronDown, Trash2, CheckSquare, FolderOpen,
+  Sun, Moon, LogOut, Menu, X, ChevronDown, Trash2, CheckSquare, FolderOpen, FolderInput,
 } from 'lucide-react';
 import { getIconComponent } from '../utils/categoryIcons';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { usePasswords } from '../hooks/usePasswords';
 import PasswordCard from '../components/PasswordCard';
 import PasswordModal from '../components/PasswordModal';
+import PasswordViewModal from '../components/PasswordViewModal';
 import PasswordGenerator from '../components/PasswordGenerator';
 import Settings from '../components/Settings';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -27,7 +28,7 @@ export default function Vault() {
   const {
     allPasswords, passwords, loading, search, setSearch,
     category, setCategory, showFavorites, setShowFavorites,
-    addPassword, updatePassword, deletePassword, deleteMultiple, toggleFavorite,
+    addPassword, updatePassword, deletePassword, deleteMultiple, moveToCategory, toggleFavorite,
     refresh,
   } = usePasswords();
 
@@ -50,6 +51,10 @@ export default function Vault() {
   const [selected, setSelected] = useState(new Set());
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [viewEntry, setViewEntry] = useState(null);
+  const [showMoveCatDropdown, setShowMoveCatDropdown] = useState(false);
+  const [moveLoading, setMoveLoading] = useState(false);
+  const [sidebarGenerator, setSidebarGenerator] = useState(false);
 
   function exitSelectMode() {
     setSelectMode(false);
@@ -92,6 +97,21 @@ export default function Vault() {
     }
   }
 
+  async function handleMoveToCategory(catValue) {
+    if (selected.size === 0) return;
+    setMoveLoading(true);
+    try {
+      const moved = await moveToCategory([...selected], catValue);
+      toast.success(`Moved ${moved} password${moved === 1 ? '' : 's'} to ${CATEGORIES.find(c => c.value === catValue)?.label || catValue}`);
+      setShowMoveCatDropdown(false);
+      exitSelectMode();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setMoveLoading(false);
+    }
+  }
+
   function openNew() {
     setModalEntry(null);
     setShowModal(true);
@@ -100,6 +120,15 @@ export default function Vault() {
   function openEdit(entry) {
     setModalEntry(entry);
     setShowModal(true);
+  }
+
+  function openView(entry) {
+    setViewEntry(entry);
+  }
+
+  function handleViewEdit(entry) {
+    setViewEntry(null);
+    openEdit(entry);
   }
 
   async function handleSave(data, id) {
@@ -157,7 +186,7 @@ export default function Vault() {
                   setShowFavorites(false);
                   setDesktopSettings(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all
                   ${isActive
                     ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
@@ -178,7 +207,7 @@ export default function Vault() {
               setCategory('all');
               setDesktopSettings(false);
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all
               ${showFavorites && !desktopSettings
                 ? 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
@@ -190,11 +219,32 @@ export default function Vault() {
           </button>
         </nav>
 
+        {/* Sidebar Generator */}
+        <div className="border-t border-gray-200 dark:border-white/10">
+          <button
+            onClick={() => setSidebarGenerator(!sidebarGenerator)}
+            className={`w-full flex items-center gap-3 px-6 py-2.5 text-sm font-medium transition-all
+              ${sidebarGenerator
+                ? 'text-primary-700 dark:text-primary-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+          >
+            <Shield className="w-4.5 h-4.5" />
+            <span className="flex-1 text-left">Generator</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sidebarGenerator ? 'rotate-180' : ''}`} />
+          </button>
+          {sidebarGenerator && (
+            <div className="px-3 pb-3 animate-scale-in">
+              <PasswordGenerator compact />
+            </div>
+          )}
+        </div>
+
         {/* Bottom actions */}
         <div className="p-3 border-t border-gray-200 dark:border-white/10 space-y-1">
           <button
             onClick={() => setDesktopSettings(true)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all
               ${desktopSettings
                 ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
@@ -205,14 +255,14 @@ export default function Vault() {
           </button>
           <button
             onClick={toggle}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
           >
             {dark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             <span>{dark ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
           >
             <LogOut className="w-4.5 h-4.5" />
             <span>Sign Out</span>
@@ -251,6 +301,42 @@ export default function Vault() {
                 >
                   <CheckSquare className={`w-5 h-5 ${selected.size === displayPasswords.length ? 'text-primary-600 dark:text-primary-400' : ''}`} />
                 </button>
+                {/* Move to category */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMoveCatDropdown(!showMoveCatDropdown)}
+                    disabled={selected.size === 0 || moveLoading}
+                    className="p-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+                    title="Move to category"
+                  >
+                    {moveLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <FolderInput className="w-5 h-5" />
+                    )}
+                  </button>
+                  {showMoveCatDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMoveCatDropdown(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 animate-scale-in">
+                        <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Move to</p>
+                        {(user?.categories || []).map((cat) => {
+                          const Icon = getIconComponent(cat.icon);
+                          return (
+                            <button
+                              key={cat.value}
+                              onClick={() => handleMoveToCategory(cat.value)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span>{cat.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
                   onClick={handleDeleteSelected}
                   disabled={selected.size === 0 || deleteLoading}
@@ -273,14 +359,14 @@ export default function Vault() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search passwords..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all"
                   />
                 </div>
 
                 {/* Add button */}
                 <button
                   onClick={openNew}
-                  className="p-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all shadow-lg shadow-primary-600/20"
+                  className="p-2.5 rounded-full bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all shadow-lg shadow-primary-600/20"
                 >
                   <Plus className="w-5 h-5" />
                 </button>
@@ -404,7 +490,7 @@ export default function Vault() {
                     <PasswordCard
                       key={entry.id}
                       entry={entry}
-                      onEdit={openEdit}
+                      onEdit={openView}
                       onToggleFavorite={toggleFavorite}
                       selectMode={selectMode}
                       isSelected={selected.has(entry.id)}
@@ -491,7 +577,7 @@ export default function Vault() {
                       setMobileTab('vault');
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all
                       ${isActive
                         ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300'
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
@@ -506,6 +592,16 @@ export default function Vault() {
             </nav>
           </aside>
         </div>
+      )}
+
+      {/* Password View Modal */}
+      {viewEntry && (
+        <PasswordViewModal
+          entry={viewEntry}
+          onClose={() => setViewEntry(null)}
+          onEdit={handleViewEdit}
+          onDelete={deletePassword}
+        />
       )}
 
       {/* Password Modal */}

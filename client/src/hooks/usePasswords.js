@@ -115,6 +115,23 @@ export function usePasswords() {
     return deleted;
   }
 
+  async function moveToCategory(ids, category) {
+    const res = await fetch('/api/passwords/batch/category', {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ ids, category }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+    const { updated } = await res.json();
+    setAllPasswords((prev) =>
+      prev.map((p) => (ids.includes(p.id) ? { ...p, category } : p))
+    );
+    return updated;
+  }
+
   async function toggleFavorite(id) {
     const res = await fetch(`/api/passwords/${id}/favorite`, {
       method: 'PATCH',
@@ -141,6 +158,7 @@ export function usePasswords() {
     updatePassword,
     deletePassword,
     deleteMultiple,
+    moveToCategory,
     toggleFavorite,
     refresh: fetchPasswords,
   };

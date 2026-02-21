@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Eye, EyeOff, Copy, Star, ExternalLink, Check } from 'lucide-react';
+import { Copy, Star, ExternalLink, Check, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getIconComponent } from '../utils/categoryIcons';
 import toast from 'react-hot-toast';
@@ -21,8 +21,8 @@ const FALLBACK = { bg: 'bg-gray-100 dark:bg-gray-500/10', text: 'text-gray-600 d
 
 export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMode, isSelected, onToggleSelect }) {
   const { user } = useAuth();
-  const [showPw, setShowPw] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [faviconError, setFaviconError] = useState(false);
 
   const cat = useMemo(() => {
     const categories = user?.categories || [];
@@ -56,7 +56,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
 
   return (
     <div
-      className={`glass-card p-4 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.99] ${
+      className={`glass-card rounded-full py-3 px-5 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.99] ${
         selectMode && isSelected ? 'ring-2 ring-primary-500 bg-primary-50/50 dark:bg-primary-500/5' : ''
       }`}
       onClick={() => selectMode ? onToggleSelect(entry.id) : onEdit(entry)}
@@ -76,11 +76,12 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
         )}
 
         {/* Icon */}
-        <div className={`w-11 h-11 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
-          {favicon ? (
-            <img src={favicon} alt="" className="w-6 h-6 rounded" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-          ) : null}
-          <CatIcon className={`w-5 h-5 ${cat.text} ${favicon ? 'hidden' : ''}`} style={favicon ? { display: 'none' } : {}} />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${favicon && !faviconError ? 'bg-gray-100 dark:bg-white/5' : 'bg-primary-100 dark:bg-primary-500/10'}`}>
+          {favicon && !faviconError ? (
+            <img src={favicon} alt="" className="w-6 h-6 rounded" onError={() => setFaviconError(true)} />
+          ) : (
+            <Globe className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          )}
         </div>
 
         {/* Info */}
@@ -95,7 +96,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
         </div>
 
         {/* Actions */}
-        {!selectMode && <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        {!selectMode && <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={copyPassword}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -103,22 +104,8 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
           >
             {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
           </button>
-          <button
-            onClick={() => setShowPw(!showPw)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            title="Toggle visibility"
-          >
-            {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
         </div>}
       </div>
-
-      {/* Password preview */}
-      {showPw && (
-        <div className="mt-3 p-2.5 rounded-lg bg-gray-50 dark:bg-white/5 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-          <code className="text-sm font-mono text-gray-700 dark:text-gray-300 break-all select-all">{entry.password}</code>
-        </div>
-      )}
     </div>
   );
 }

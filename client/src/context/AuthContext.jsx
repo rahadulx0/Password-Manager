@@ -44,7 +44,12 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
-  const logout = useCallback(() => {
+  const logout = useCallback((reason) => {
+    if (reason === 'inactivity') {
+      localStorage.setItem('inactivityLogout', 'true');
+    } else {
+      localStorage.removeItem('inactivityLogout');
+    }
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
@@ -60,7 +65,7 @@ export function AuthProvider({ children }) {
     function resetTimer() {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        logout();
+        logout('inactivity');
         toast('Logged out due to inactivity');
       }, TIMEOUT);
     }

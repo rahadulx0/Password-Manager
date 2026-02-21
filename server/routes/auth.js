@@ -122,7 +122,7 @@ router.post('/signup/verify', async (req, res) => {
 
 router.post('/signin', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, skipOtp } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -138,8 +138,8 @@ router.post('/signin', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // If 2FA is enabled, send OTP instead of returning JWT
-    if (user.twoFactorEnabled) {
+    // If 2FA is enabled and not skipped (e.g. returning from inactivity), send OTP
+    if (user.twoFactorEnabled && !skipOtp) {
       await Otp.deleteMany({ email, purpose: 'login' });
 
       const code = generateOtp();

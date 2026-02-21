@@ -204,6 +204,28 @@ router.delete('/batch', async (req, res) => {
   }
 });
 
+// Bulk move passwords to a category
+router.patch('/batch/category', async (req, res) => {
+  try {
+    const { ids, category } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'No passwords selected' });
+    }
+    if (!category) {
+      return res.status(400).json({ message: 'Category is required' });
+    }
+
+    const result = await Password.updateMany(
+      { _id: { $in: ids }, user: req.userId },
+      { $set: { category } }
+    );
+    res.json({ updated: result.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Delete password
 router.delete('/:id', async (req, res) => {
   try {
