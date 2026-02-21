@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowRight, ArrowLeft, KeyRound, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -31,7 +32,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password/send-otp', {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -53,7 +54,7 @@ export default function ForgotPassword() {
     if (loading) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password/verify', {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),
@@ -93,7 +94,7 @@ export default function ForgotPassword() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password/reset', {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password/reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetToken, newPassword }),
@@ -112,7 +113,7 @@ export default function ForgotPassword() {
     if (resendCooldown > 0) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password/send-otp', {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

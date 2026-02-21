@@ -5,6 +5,7 @@ import {
   ArrowRight, AlertTriangle, Download, Upload, Plus, Tag, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+const API_URL = import.meta.env.VITE_API_URL;
 import { useTheme } from '../context/ThemeContext';
 import { ICON_MAP, ICON_NAMES, getIconComponent } from '../utils/categoryIcons';
 import ConfirmDialog from './ConfirmDialog';
@@ -95,7 +96,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setProfileLoading(true);
     try {
-      const res = await fetch('/api/user/profile', {
+      const res = await fetch(`${API_URL}/api/user/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editName.trim(), username: editUsername.trim() }),
@@ -122,7 +123,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setEmailLoading(true);
     try {
-      const res = await fetch('/api/user/change-email/send-otp', {
+      const res = await fetch(`${API_URL}/api/user/change-email/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ newEmail, password: emailPassword }),
@@ -143,7 +144,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     if (code.length !== 6) return;
     setEmailLoading(true);
     try {
-      const res = await fetch('/api/user/change-email/verify', {
+      const res = await fetch(`${API_URL}/api/user/change-email/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ newEmail, code }),
@@ -166,7 +167,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     if (emailResendCooldown > 0) return;
     setEmailLoading(true);
     try {
-      const res = await fetch('/api/user/change-email/send-otp', {
+      const res = await fetch(`${API_URL}/api/user/change-email/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ newEmail, password: emailPassword }),
@@ -235,7 +236,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setPwLoading(true);
     try {
-      const res = await fetch('/api/user/change-password', {
+      const res = await fetch(`${API_URL}/api/user/change-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
@@ -264,7 +265,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setTwoFALoading(true);
     try {
-      const res = await fetch('/api/user/two-factor', {
+      const res = await fetch(`${API_URL}/api/user/two-factor`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ enabled: !user?.twoFactorEnabled, password: twoFAPw }),
@@ -292,7 +293,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setDeleteLoading(true);
     try {
-      const res = await fetch('/api/user/account', {
+      const res = await fetch(`${API_URL}/api/user/account`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ password: deletePw }),
@@ -313,7 +314,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
   async function handleExport() {
     setExportLoading(true);
     try {
-      const res = await fetch('/api/passwords/export', {
+      const res = await fetch(`${API_URL}/api/passwords/export`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Export failed');
@@ -419,7 +420,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     if (!pendingImport) return;
     setImportLoading(true);
     try {
-      const res = await fetch('/api/passwords/import', {
+      const res = await fetch(`${API_URL}/api/passwords/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ passwords: pendingImport }),
@@ -449,7 +450,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setCatLoading(true);
     try {
-      const res = await fetch('/api/user/categories', {
+      const res = await fetch(`${API_URL}/api/user/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ label: newCatLabel.trim(), icon: newCatIcon }),
@@ -474,7 +475,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
       const body = {};
       if (editCatLabel.trim()) body.label = editCatLabel.trim();
       if (editCatIcon) body.icon = editCatIcon;
-      const res = await fetch(`/api/user/categories/${value}`, {
+      const res = await fetch(`${API_URL}/api/user/categories/${value}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
@@ -499,7 +500,7 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
     }
     setCatLoading(true);
     try {
-      const res = await fetch(`/api/user/categories/${value}`, {
+      const res = await fetch(`${API_URL}/api/user/categories/${value}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

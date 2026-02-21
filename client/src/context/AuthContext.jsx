@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AuthContext = createContext(null);
 
@@ -18,7 +19,7 @@ export function AuthProvider({ children }) {
 
   async function fetchUser() {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+const API_URL = import.meta.env.VITE_API_URL;
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, ChevronDown } from 'lucide-react';
@@ -35,7 +36,7 @@ export default function SignIn() {
     setLoading(true);
     try {
       const isInactivityReturn = localStorage.getItem('inactivityLogout') === 'true';
-      const res = await fetch('/api/auth/signin', {
+      const res = await fetch(`${API_URL}/api/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, skipOtp: isInactivityReturn }),
@@ -70,7 +71,7 @@ export default function SignIn() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/signin/verify-2fa', {
+      const res = await fetch(`${API_URL}/api/auth/signin/verify-2fa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, code }),
@@ -93,7 +94,7 @@ export default function SignIn() {
     if (resendCooldown > 0) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/signin', {
+      const res = await fetch(`${API_URL}/api/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

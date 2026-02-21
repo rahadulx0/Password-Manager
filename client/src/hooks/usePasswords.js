@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function usePasswords() {
   const { token } = useAuth();
@@ -16,7 +17,7 @@ export function usePasswords() {
 
   const fetchPasswords = useCallback(async () => {
     try {
-      const res = await fetch('/api/passwords', { headers });
+      const res = await fetch(`${API_URL}/api/passwords`, { headers });
       if (res.ok) {
         const data = await res.json();
         setAllPasswords(data);
@@ -59,7 +60,7 @@ export function usePasswords() {
   }, [allPasswords, search, category, showFavorites]);
 
   async function addPassword(data) {
-    const res = await fetch('/api/passwords', {
+    const res = await fetch(`${API_URL}/api/passwords`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -74,7 +75,7 @@ export function usePasswords() {
   }
 
   async function updatePassword(id, data) {
-    const res = await fetch(`/api/passwords/${id}`, {
+    const res = await fetch(`${API_URL}/api/passwords/${id}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -89,7 +90,7 @@ export function usePasswords() {
   }
 
   async function deletePassword(id) {
-    const res = await fetch(`/api/passwords/${id}`, {
+    const res = await fetch(`${API_URL}/api/passwords/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -101,7 +102,7 @@ export function usePasswords() {
   }
 
   async function deleteMultiple(ids) {
-    const res = await fetch('/api/passwords/batch', {
+    const res = await fetch(`${API_URL}/api/passwords/batch`, {
       method: 'DELETE',
       headers,
       body: JSON.stringify({ ids }),
@@ -116,7 +117,7 @@ export function usePasswords() {
   }
 
   async function moveToCategory(ids, category) {
-    const res = await fetch('/api/passwords/batch/category', {
+    const res = await fetch(`${API_URL}/api/passwords/batch/category`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ ids, category }),
