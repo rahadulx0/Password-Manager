@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Search, Plus, Key, Star, Shield, Settings,
+  Search, Plus, Key, Star, Shield, Settings as SettingsIcon,
   Sun, Moon, LogOut, Menu, X, ChevronDown,
   ShoppingBag, Mail, Briefcase, Gamepad2, CreditCard, Globe, Lock
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { usePasswords } from '../hooks/usePasswords';
 import PasswordCard from '../components/PasswordCard';
 import PasswordModal from '../components/PasswordModal';
 import PasswordGenerator from '../components/PasswordGenerator';
+import Settings from '../components/Settings';
 
 const CATEGORIES = [
   { value: 'all', label: 'All Items', icon: Key },
@@ -26,14 +27,14 @@ const MOBILE_TABS = [
   { id: 'vault', label: 'Vault', icon: Key },
   { id: 'favorites', label: 'Favorites', icon: Star },
   { id: 'generator', label: 'Generator', icon: Shield },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 export default function Vault() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const {
-    passwords, loading, search, setSearch,
+    allPasswords, passwords, loading, search, setSearch,
     category, setCategory, showFavorites, setShowFavorites,
     addPassword, updatePassword, deletePassword, toggleFavorite,
   } = usePasswords();
@@ -43,6 +44,7 @@ export default function Vault() {
   const [mobileTab, setMobileTab] = useState('vault');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCatDropdown, setShowCatDropdown] = useState(false);
+  const [desktopSettings, setDesktopSettings] = useState(false);
 
   function openNew() {
     setModalEntry(null);
@@ -62,13 +64,18 @@ export default function Vault() {
     }
   }
 
-  // Derived data
-  const favoritePasswords = passwords.filter((p) => p.favorite);
+  // Derived data — use allPasswords for counts so they're always correct
+  const allFavorites = allPasswords.filter((p) => p.favorite);
   const displayPasswords = mobileTab === 'favorites' || showFavorites
-    ? favoritePasswords
+    ? passwords.filter((p) => p.favorite)
     : passwords;
 
   const currentCategory = CATEGORIES.find((c) => c.value === category);
+
+  // Whether to show settings in the main area (desktop via sidebar button, or mobile tab)
+  const showSettingsView = desktopSettings || mobileTab === 'settings';
+  // Whether to show the vault/list content
+  const showVaultContent = !showSettingsView && (mobileTab === 'vault' || mobileTab === 'favorites' || typeof window !== 'undefined' && window.innerWidth >= 1024);
 
   return (
     <div className="min-h-screen flex">
@@ -82,7 +89,7 @@ export default function Vault() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{user?.username}</p>
             </div>
           </div>
         </div>
@@ -92,16 +99,17 @@ export default function Vault() {
           <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">Categories</p>
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
-            const isActive = category === cat.value && !showFavorites;
+            const isActive = category === cat.value && !showFavorites && !desktopSettings;
             const count = cat.value === 'all'
-              ? passwords.length
-              : passwords.filter((p) => p.category === cat.value).length;
+              ? allPasswords.length
+              : allPasswords.filter((p) => p.category === cat.value).length;
             return (
               <button
                 key={cat.value}
                 onClick={() => {
                   setCategory(cat.value);
                   setShowFavorites(false);
+                  setDesktopSettings(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                   ${isActive
@@ -122,21 +130,33 @@ export default function Vault() {
             onClick={() => {
               setShowFavorites(true);
               setCategory('all');
+              setDesktopSettings(false);
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-              ${showFavorites
+              ${showFavorites && !desktopSettings
                 ? 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
           >
-            <Star className={`w-4.5 h-4.5 ${showFavorites ? 'fill-yellow-500' : ''}`} />
+            <Star className={`w-4.5 h-4.5 ${showFavorites && !desktopSettings ? 'fill-yellow-500' : ''}`} />
             <span className="flex-1 text-left">Favorites</span>
-            <span className={`text-xs ${showFavorites ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'}`}>{favoritePasswords.length}</span>
+            <span className={`text-xs ${showFavorites && !desktopSettings ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-500'}`}>{allFavorites.length}</span>
           </button>
         </nav>
 
         {/* Bottom actions */}
         <div className="p-3 border-t border-gray-200 dark:border-white/10 space-y-1">
+          <button
+            onClick={() => setDesktopSettings(true)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+              ${desktopSettings
+                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+          >
+            <SettingsIcon className="w-4.5 h-4.5" />
+            <span>Settings</span>
+          </button>
           <button
             onClick={toggle}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
@@ -156,7 +176,7 @@ export default function Vault() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen">
-        {/* Top bar */}
+        {/* Top bar — hide search/add when showing settings */}
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-3 px-4 py-3">
             {/* Mobile menu button */}
@@ -167,73 +187,84 @@ export default function Vault() {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search passwords..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all"
-              />
-            </div>
-
-            {/* Add button */}
-            <button
-              onClick={openNew}
-              className="p-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all shadow-lg shadow-primary-600/20"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Mobile category filter */}
-          <div className="lg:hidden px-4 pb-3 relative">
-            <button
-              onClick={() => setShowCatDropdown(!showCatDropdown)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400"
-            >
-              {(() => { const Icon = currentCategory?.icon || Key; return <Icon className="w-4 h-4" />; })()}
-              <span>{currentCategory?.label || 'All Items'}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCatDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showCatDropdown && (
+            {!showSettingsView ? (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowCatDropdown(false)} />
-                <div className="absolute top-full left-4 mt-1 z-50 w-48 py-1 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 animate-scale-in">
-                  {CATEGORIES.map((cat) => {
-                    const Icon = cat.icon;
-                    return (
-                      <button
-                        key={cat.value}
-                        onClick={() => {
-                          setCategory(cat.value);
-                          setShowFavorites(false);
-                          setShowCatDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors
-                          ${category === cat.value && !showFavorites
-                            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
-                          }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{cat.label}</span>
-                      </button>
-                    );
-                  })}
+                {/* Search */}
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search passwords..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all"
+                  />
                 </div>
+
+                {/* Add button */}
+                <button
+                  onClick={openNew}
+                  className="p-2.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all shadow-lg shadow-primary-600/20"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
               </>
+            ) : (
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white lg:hidden">Settings</h2>
+              </div>
             )}
           </div>
+
+          {/* Mobile category filter — only when showing vault */}
+          {!showSettingsView && (
+            <div className="lg:hidden px-4 pb-3 relative">
+              <button
+                onClick={() => setShowCatDropdown(!showCatDropdown)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400"
+              >
+                {(() => { const Icon = currentCategory?.icon || Key; return <Icon className="w-4 h-4" />; })()}
+                <span>{currentCategory?.label || 'All Items'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCatDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showCatDropdown && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowCatDropdown(false)} />
+                  <div className="absolute top-full left-4 mt-1 z-50 w-48 py-1 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 animate-scale-in">
+                    {CATEGORIES.map((cat) => {
+                      const Icon = cat.icon;
+                      return (
+                        <button
+                          key={cat.value}
+                          onClick={() => {
+                            setCategory(cat.value);
+                            setShowFavorites(false);
+                            setShowCatDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors
+                            ${category === cat.value && !showFavorites
+                              ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
+                            }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{cat.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </header>
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto pb-24 lg:pb-6">
-          {/* Mobile tab content */}
-          {(mobileTab === 'vault' || mobileTab === 'favorites' || typeof window !== 'undefined' && window.innerWidth >= 1024) ? (
+          {showSettingsView ? (
+            <Settings passwords={allPasswords} favoritePasswords={allFavorites} />
+          ) : showVaultContent ? (
             <div className="p-4 space-y-2 max-w-2xl mx-auto w-full">
               {/* Section header */}
               <div className="flex items-center justify-between mb-2">
@@ -301,68 +332,6 @@ export default function Vault() {
                 <PasswordGenerator />
               </div>
             </div>
-          ) : mobileTab === 'settings' ? (
-            <div className="p-4 max-w-md mx-auto w-full">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Settings</h2>
-              <div className="glass-card divide-y divide-gray-200 dark:divide-white/10 overflow-hidden">
-                {/* Profile */}
-                <div className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold text-lg">
-                      {user?.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">{user?.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="p-4">
-                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Statistics</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{passwords.length}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total</p>
-                    </div>
-                    <div className="text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{favoritePasswords.length}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Favorites</p>
-                    </div>
-                    <div className="text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5">
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{new Set(passwords.map((p) => p.category)).size}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Categories</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Theme */}
-                <button
-                  onClick={toggle}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {dark ? <Sun className="w-5 h-5 text-gray-500" /> : <Moon className="w-5 h-5 text-gray-500" />}
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {dark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    </span>
-                  </div>
-                  <div className={`w-12 h-7 rounded-full p-1 transition-colors ${dark ? 'bg-primary-600' : 'bg-gray-200'}`}>
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${dark ? 'translate-x-5' : ''}`} />
-                  </div>
-                </button>
-
-                {/* Sign out */}
-                <button
-                  onClick={logout}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                >
-                  <LogOut className="w-5 h-5 text-red-500" />
-                  <span className="text-sm font-medium text-red-500">Sign Out</span>
-                </button>
-              </div>
-            </div>
           ) : null}
         </div>
 
@@ -377,6 +346,7 @@ export default function Vault() {
                   key={tab.id}
                   onClick={() => {
                     setMobileTab(tab.id);
+                    setDesktopSettings(false);
                     if (tab.id === 'favorites') {
                       setShowFavorites(true);
                       setCategory('all');
@@ -408,7 +378,7 @@ export default function Vault() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-white text-sm">{user?.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">@{user?.username}</p>
                 </div>
               </div>
               <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400">
@@ -421,8 +391,8 @@ export default function Vault() {
                 const Icon = cat.icon;
                 const isActive = category === cat.value && !showFavorites;
                 const count = cat.value === 'all'
-                  ? passwords.length
-                  : passwords.filter((p) => p.category === cat.value).length;
+                  ? allPasswords.length
+                  : allPasswords.filter((p) => p.category === cat.value).length;
                 return (
                   <button
                     key={cat.value}

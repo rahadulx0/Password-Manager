@@ -8,6 +8,16 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: 50,
   },
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 30,
+    match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores'],
+  },
   email: {
     type: String,
     required: true,
@@ -19,6 +29,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 8,
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false,
   },
 }, { timestamps: true });
 

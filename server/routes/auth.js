@@ -11,23 +11,44 @@ function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
 }
 
+function userResponse(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    username: user.username,
+    email: user.email,
+    twoFactorEnabled: user.twoFactorEnabled,
+  };
+}
+
 // ─── Sign Up Flow ───────────────────────────────────────
 
 // Step 1: Send OTP to email for signup
 router.post('/signup/send-otp', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !username || !email || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
     if (password.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters' });
     }
+    if (username.length < 3 || username.length > 30) {
+      return res.status(400).json({ message: 'Username must be 3-30 characters' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores' });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username already taken' });
     }
 
     // Delete any existing OTPs for this email
@@ -53,9 +74,9 @@ router.post('/signup/send-otp', async (req, res) => {
 // Step 2: Verify OTP and create account
 router.post('/signup/verify', async (req, res) => {
   try {
-    const { name, email, password, code } = req.body;
+    const { name, username, email, password, code } = req.body;
 
-    if (!name || !email || !password || !code) {
+    if (!name || !username || !email || !password || !code) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -76,14 +97,19 @@ router.post('/signup/verify', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, password });
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
+
+    const user = await User.create({ name, username, email, password });
     await Otp.deleteMany({ email, purpose: 'signup' });
 
     const token = generateToken(user._id);
 
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: userResponse(user),
     });
   } catch (err) {
     console.error('Verify OTP error:', err.message);
@@ -111,11 +137,74 @@ router.post('/signin', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // If 2FA is enabled, send OTP instead of returning JWT
+    if (user.twoFactorEnabled) {
+      await Otp.deleteMany({ email, purpose: 'login' });
+
+      const code = generateOtp();
+      await Otp.create({
+        email,
+        code,
+        purpose: 'login',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      await sendOtpEmail(email, code, 'login');
+
+      return res.json({ requires2FA: true, message: 'Verification code sent to your email' });
+    }
+
     const token = generateToken(user._id);
 
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: userResponse(user),
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── 2FA Verification ──────────────────────────────────
+
+router.post('/signin/verify-2fa', async (req, res) => {
+  try {
+    const { email, password, code } = req.body;
+
+    if (!email || !password || !code) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Re-verify credentials
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const otpEntry = await Otp.findOne({ email, purpose: 'login' });
+    if (!otpEntry) {
+      return res.status(400).json({ message: 'No verification code found. Please sign in again' });
+    }
+    if (otpEntry.code !== code) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+    if (otpEntry.expiresAt < new Date()) {
+      await Otp.deleteMany({ email, purpose: 'login' });
+      return res.status(400).json({ message: 'Code expired. Please sign in again' });
+    }
+
+    await Otp.deleteMany({ email, purpose: 'login' });
+
+    const token = generateToken(user._id);
+
+    res.json({
+      token,
+      user: userResponse(user),
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -233,7 +322,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ id: user._id, name: user.name, email: user.email });
+    res.json(userResponse(user));
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

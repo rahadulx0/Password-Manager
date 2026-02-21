@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.js';
 import passwordRoutes from './routes/passwords.js';
+import userRoutes from './routes/user.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use('/api/auth', limiter);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/passwords', passwordRoutes);
+app.use('/api/user', userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

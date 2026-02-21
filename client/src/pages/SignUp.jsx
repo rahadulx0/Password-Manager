@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail, User, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, AtSign, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SignUp() {
   const [step, setStep] = useState(1); // 1 = form, 2 = OTP
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -31,6 +32,14 @@ export default function SignUp() {
 
   async function handleSendOtp(e) {
     e.preventDefault();
+    if (username.length < 3 || username.length > 30) {
+      toast.error('Username must be 3-30 characters');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      toast.error('Username can only contain letters, numbers, and underscores');
+      return;
+    }
     if (password.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
@@ -40,7 +49,7 @@ export default function SignUp() {
       const res = await fetch('/api/auth/signup/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, username, email, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -65,7 +74,7 @@ export default function SignUp() {
       const res = await fetch('/api/auth/signup/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, code }),
+        body: JSON.stringify({ name, username, email, password, code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -88,7 +97,7 @@ export default function SignUp() {
       const res = await fetch('/api/auth/signup/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, username, email, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -149,7 +158,7 @@ export default function SignUp() {
       const res = await fetch('/api/auth/signup/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, code }),
+        body: JSON.stringify({ name, username, email, password, code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -195,6 +204,21 @@ export default function SignUp() {
                 required
                 className="input-field pl-11"
                 autoComplete="name"
+              />
+            </div>
+
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                required
+                minLength={3}
+                maxLength={30}
+                className="input-field pl-11"
+                autoComplete="username"
               />
             </div>
 
