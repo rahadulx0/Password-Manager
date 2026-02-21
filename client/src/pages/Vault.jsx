@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Search, Plus, Key, Star, Shield, Settings as SettingsIcon,
-  Sun, Moon, LogOut, Menu, X, ChevronDown, Trash2, CheckSquare,
-  ShoppingBag, Mail, Briefcase, Gamepad2, CreditCard, Globe, Lock
+  Sun, Moon, LogOut, Menu, X, ChevronDown, Trash2, CheckSquare, FolderOpen,
 } from 'lucide-react';
+import { getIconComponent } from '../utils/categoryIcons';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -13,17 +13,6 @@ import PasswordModal from '../components/PasswordModal';
 import PasswordGenerator from '../components/PasswordGenerator';
 import Settings from '../components/Settings';
 import ConfirmDialog from '../components/ConfirmDialog';
-
-const CATEGORIES = [
-  { value: 'all', label: 'All Items', icon: Key },
-  { value: 'social', label: 'Social', icon: Globe },
-  { value: 'email', label: 'Email', icon: Mail },
-  { value: 'finance', label: 'Finance', icon: CreditCard },
-  { value: 'shopping', label: 'Shopping', icon: ShoppingBag },
-  { value: 'work', label: 'Work', icon: Briefcase },
-  { value: 'entertainment', label: 'Entertainment', icon: Gamepad2 },
-  { value: 'other', label: 'Other', icon: Lock },
-];
 
 const MOBILE_TABS = [
   { id: 'vault', label: 'Vault', icon: Key },
@@ -41,6 +30,15 @@ export default function Vault() {
     addPassword, updatePassword, deletePassword, deleteMultiple, toggleFavorite,
     refresh,
   } = usePasswords();
+
+  const CATEGORIES = useMemo(() => {
+    const userCats = (user?.categories || []).map((c) => ({
+      value: c.value,
+      label: c.label,
+      icon: c.icon,
+    }));
+    return [{ value: 'all', label: 'All Items', icon: 'FolderOpen' }, ...userCats];
+  }, [user?.categories]);
 
   const [modalEntry, setModalEntry] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -146,7 +144,7 @@ export default function Vault() {
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">Categories</p>
           {CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
+            const Icon = getIconComponent(cat.icon);
             const isActive = category === cat.value && !showFavorites && !desktopSettings;
             const count = cat.value === 'all'
               ? allPasswords.length
@@ -301,7 +299,7 @@ export default function Vault() {
                 onClick={() => setShowCatDropdown(!showCatDropdown)}
                 className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400"
               >
-                {(() => { const Icon = currentCategory?.icon || Key; return <Icon className="w-4 h-4" />; })()}
+                {(() => { const Icon = getIconComponent(currentCategory?.icon || 'FolderOpen'); return <Icon className="w-4 h-4" />; })()}
                 <span>{currentCategory?.label || 'All Items'}</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCatDropdown ? 'rotate-180' : ''}`} />
               </button>
@@ -311,7 +309,7 @@ export default function Vault() {
                   <div className="fixed inset-0 z-40" onClick={() => setShowCatDropdown(false)} />
                   <div className="absolute top-full left-4 mt-1 z-50 w-48 py-1 bg-white dark:bg-[#2c2c2e] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 animate-scale-in">
                     {CATEGORIES.map((cat) => {
-                      const Icon = cat.icon;
+                      const Icon = getIconComponent(cat.icon);
                       return (
                         <button
                           key={cat.value}
@@ -479,7 +477,7 @@ export default function Vault() {
             <nav className="p-3 space-y-0.5">
               <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">Categories</p>
               {CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
+                const Icon = getIconComponent(cat.icon);
                 const isActive = category === cat.value && !showFavorites;
                 const count = cat.value === 'all'
                   ? allPasswords.length

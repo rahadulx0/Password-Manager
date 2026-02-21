@@ -34,7 +34,29 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  categories: [{
+    value: { type: String, required: true },
+    label: { type: String, required: true },
+    icon: { type: String, required: true },
+  }],
 }, { timestamps: true });
+
+const DEFAULT_CATEGORIES = [
+  { value: 'social', label: 'Social', icon: 'Globe' },
+  { value: 'email', label: 'Email', icon: 'Mail' },
+  { value: 'finance', label: 'Finance', icon: 'Landmark' },
+  { value: 'shopping', label: 'Shopping', icon: 'ShoppingBag' },
+  { value: 'work', label: 'Work', icon: 'Briefcase' },
+  { value: 'entertainment', label: 'Entertainment', icon: 'Gamepad2' },
+  { value: 'other', label: 'Other', icon: 'Key' },
+];
+
+userSchema.pre('save', function (next) {
+  if (this.isNew && (!this.categories || this.categories.length === 0)) {
+    this.categories = DEFAULT_CATEGORIES;
+  }
+  next();
+});
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

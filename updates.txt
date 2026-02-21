@@ -1,0 +1,5 @@
+do the following implmentations in the login page:
+
+1. When password is clicked, it will expand to username and password fields. both fields will have copy button next to them. 
+2. While typing password, after each character the text focus removes from the password field.
+3. The user will be logged out after 15 minutes of inactivity.

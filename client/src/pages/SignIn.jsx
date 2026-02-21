@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, Copy, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SignIn() {
@@ -15,6 +15,8 @@ export default function SignIn() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const otpRefs = useRef([]);
+  const passwordRef = useRef(null);
+  const [formExpanded, setFormExpanded] = useState(false);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -167,6 +169,19 @@ export default function SignIn() {
     }
   }
 
+  function handlePasswordChange(e) {
+    setPassword(e.target.value);
+    passwordRef.current?.blur();
+  }
+
+  function copyToClipboard(text, label) {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(`${label} copied!`);
+    }).catch(() => {
+      toast.error('Failed to copy');
+    });
+  }
+
   return (
     <div className="h-full overflow-y-auto flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-slide-up">
@@ -185,64 +200,101 @@ export default function SignIn() {
         </div>
 
         {step === 1 ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input-field pl-11"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showPw ? 'text' : 'password'}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="input-field pl-11 pr-11"
-                autoComplete="current-password"
-              />
+          !formExpanded ? (
+            <div className="space-y-4">
               <button
                 type="button"
-                onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                onClick={() => setFormExpanded(true)}
+                className="w-full flex items-center justify-between p-4 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition-all cursor-pointer"
               >
-                {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-gray-400" />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Password</span>
+                </div>
+                <ChevronDown className="w-5 h-5 text-gray-400" />
               </button>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4 animate-scale-in">
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="input-field pl-11"
+                    autoComplete="email"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(email, 'Email')}
+                  className="flex-shrink-0 p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400 hover:text-primary-500 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all"
+                  title="Copy email"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    ref={passwordRef}
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="Password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    required
+                    className="input-field pl-11 pr-11"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(password, 'Password')}
+                  className="flex-shrink-0 p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400 hover:text-primary-500 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all"
+                  title="Copy password"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
-                Forgot password?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )
         ) : (
           /* ─── Step 2: 2FA OTP Verification ─── */
           <div className="space-y-6 animate-scale-in">

@@ -48,6 +48,7 @@ router.put('/profile', async (req, res) => {
       username: user.username,
       email: user.email,
       twoFactorEnabled: user.twoFactorEnabled,
+      categories: user.categories || [],
     });
   } catch (err) {
     console.error('Update profile error:', err.message);
@@ -140,6 +141,7 @@ router.post('/change-email/verify', async (req, res) => {
       username: user.username,
       email: user.email,
       twoFactorEnabled: user.twoFactorEnabled,
+      categories: user.categories || [],
     });
   } catch (err) {
     console.error('Change email verify error:', err.message);
@@ -205,6 +207,142 @@ router.put('/two-factor', async (req, res) => {
     });
   } catch (err) {
     console.error('Toggle 2FA error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── Category Management ────────────────────────────
+
+const DEFAULT_CATEGORIES = [
+  { value: 'social', label: 'Social', icon: 'Globe' },
+  { value: 'email', label: 'Email', icon: 'Mail' },
+  { value: 'finance', label: 'Finance', icon: 'Landmark' },
+  { value: 'shopping', label: 'Shopping', icon: 'ShoppingBag' },
+  { value: 'work', label: 'Work', icon: 'Briefcase' },
+  { value: 'entertainment', label: 'Entertainment', icon: 'Gamepad2' },
+  { value: 'other', label: 'Other', icon: 'Key' },
+];
+
+async function ensureCategories(user) {
+  if (!user.categories || user.categories.length === 0) {
+    user.categories = DEFAULT_CATEGORIES;
+    await user.save();
+  }
+  return user;
+}
+
+function generateSlug(label, existingValues) {
+  let base = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!base) base = 'category';
+  let slug = base;
+  let counter = 2;
+  while (existingValues.includes(slug)) {
+    slug = `${base}-${counter}`;
+    counter++;
+  }
+  return slug;
+}
+
+// Add category
+router.post('/categories', async (req, res) => {
+  try {
+    const { label, icon } = req.body;
+
+    if (!label || !icon) {
+      return res.status(400).json({ message: 'Label and icon are required' });
+    }
+    if (label.trim().length === 0 || label.trim().length > 30) {
+      return res.status(400).json({ message: 'Label must be 1-30 characters' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    await ensureCategories(user);
+
+    if (user.categories.length >= 20) {
+      return res.status(400).json({ message: 'Maximum 20 categories allowed' });
+    }
+
+    const existingValues = user.categories.map((c) => c.value);
+    const value = generateSlug(label.trim(), existingValues);
+
+    user.categories.push({ value, label: label.trim(), icon });
+    await user.save();
+
+    res.json({ categories: user.categories });
+  } catch (err) {
+    console.error('Add category error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update category
+router.put('/categories/:value', async (req, res) => {
+  try {
+    const { label, icon } = req.body;
+    const { value } = req.params;
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    await ensureCategories(user);
+
+    const cat = user.categories.find((c) => c.value === value);
+    if (!cat) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    if (label !== undefined) {
+      if (label.trim().length === 0 || label.trim().length > 30) {
+        return res.status(400).json({ message: 'Label must be 1-30 characters' });
+      }
+      cat.label = label.trim();
+    }
+    if (icon !== undefined) {
+      if (!icon) {
+        return res.status(400).json({ message: 'Icon cannot be empty' });
+      }
+      cat.icon = icon;
+    }
+
+    await user.save();
+
+    res.json({ categories: user.categories });
+  } catch (err) {
+    console.error('Update category error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete category
+router.delete('/categories/:value', async (req, res) => {
+  try {
+    const { value } = req.params;
+
+    if (value === 'other') {
+      return res.status(400).json({ message: 'Cannot delete the "other" category' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    await ensureCategories(user);
+
+    const catIndex = user.categories.findIndex((c) => c.value === value);
+    if (catIndex === -1) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    user.categories.splice(catIndex, 1);
+    await user.save();
+
+    // Reassign passwords from deleted category to "other"
+    await Password.updateMany(
+      { user: req.userId, category: value },
+      { category: 'other' },
+    );
+
+    res.json({ categories: user.categories });
+  } catch (err) {
+    console.error('Delete category error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });

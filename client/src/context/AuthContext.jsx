@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
@@ -43,11 +44,36 @@ export function AuthProvider({ children }) {
     setUser(userData);
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-  }
+  }, []);
+
+  // Auto-logout after 15 minutes of inactivity
+  useEffect(() => {
+    if (!token) return;
+
+    const TIMEOUT = 15 * 60 * 1000;
+    let timer;
+
+    function resetTimer() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+        toast('Logged out due to inactivity');
+      }, TIMEOUT);
+    }
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach((e) => window.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+    };
+  }, [token, logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, fetchUser, updateUser }}>

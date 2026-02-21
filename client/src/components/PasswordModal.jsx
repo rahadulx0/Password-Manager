@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Trash2, Star, Wand2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { getIconComponent } from '../utils/categoryIcons';
 import PasswordGenerator from './PasswordGenerator';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = [
-  { value: 'social', label: 'Social', icon: '🌐' },
-  { value: 'email', label: 'Email', icon: '📧' },
-  { value: 'finance', label: 'Finance', icon: '🏦' },
-  { value: 'shopping', label: 'Shopping', icon: '🛍️' },
-  { value: 'work', label: 'Work', icon: '💼' },
-  { value: 'entertainment', label: 'Entertainment', icon: '🎮' },
-  { value: 'other', label: 'Other', icon: '🔑' },
-];
-
 export default function PasswordModal({ entry, onClose, onSave, onDelete, onToggleFavorite }) {
+  const { user } = useAuth();
+  const CATEGORIES = user?.categories || [];
   const isEdit = !!entry?.id;
   const [form, setForm] = useState({
     title: '',
@@ -187,22 +181,25 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
           {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Category</label>
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => handleChange('category', cat.value)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-xl text-xs font-medium transition-all
-                    ${form.category === cat.value
-                      ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border-2 border-primary-300 dark:border-primary-500/30'
-                      : 'bg-gray-50 dark:bg-white/5 text-gray-500 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
-                    }`}
-                >
-                  <span className="text-lg">{cat.icon}</span>
-                  <span className="truncate w-full text-center">{cat.label}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-4 gap-2">
+              {CATEGORIES.map((cat) => {
+                const Icon = getIconComponent(cat.icon);
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => handleChange('category', cat.value)}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl text-xs font-medium transition-all
+                      ${form.category === cat.value
+                        ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border-2 border-primary-300 dark:border-primary-500/30'
+                        : 'bg-gray-50 dark:bg-white/5 text-gray-500 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-white/10'
+                      }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="truncate w-full text-center">{cat.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

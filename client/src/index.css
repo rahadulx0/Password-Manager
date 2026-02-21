@@ -2,18 +2,32 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Accent color CSS variables — overridden by JS in ThemeContext */
+:root {
+  --accent-50: #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-200: #bfdbfe;
+  --accent-300: #93c5fd;
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+  --accent-800: #1e40af;
+  --accent-900: #1e3a8a;
+}
+
 @theme {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  --color-primary-50: var(--accent-50);
+  --color-primary-100: var(--accent-100);
+  --color-primary-200: var(--accent-200);
+  --color-primary-300: var(--accent-300);
+  --color-primary-400: var(--accent-400);
+  --color-primary-500: var(--accent-500);
+  --color-primary-600: var(--accent-600);
+  --color-primary-700: var(--accent-700);
+  --color-primary-800: var(--accent-800);
+  --color-primary-900: var(--accent-900);
 }
 
 @layer base {
@@ -98,8 +112,8 @@
   }
   .input-field:focus {
     background: white;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    border-color: var(--accent-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-500) 15%, transparent);
   }
   .dark .input-field {
     background: rgba(255,255,255,0.05);
@@ -111,7 +125,7 @@
   }
   .dark .input-field:focus {
     background: rgba(255,255,255,0.08);
-    border-color: #3b82f6;
+    border-color: var(--accent-500);
   }
 
   .btn-primary {
@@ -119,7 +133,7 @@
     align-items: center;
     justify-content: center;
     padding: 0.75rem 1.5rem;
-    background: #2563eb;
+    background: var(--accent-600);
     color: white;
     font-weight: 600;
     border-radius: 0.75rem;
@@ -129,7 +143,7 @@
     font-size: 1rem;
   }
   .btn-primary:hover {
-    background: #1d4ed8;
+    background: var(--accent-700);
   }
   .btn-primary:active {
     transform: scale(0.98);

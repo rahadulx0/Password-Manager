@@ -18,6 +18,7 @@ function userResponse(user) {
     username: user.username,
     email: user.email,
     twoFactorEnabled: user.twoFactorEnabled,
+    categories: user.categories || [],
   };
 }
 
@@ -322,6 +323,21 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Lazy migration: seed default categories for existing users
+    if (!user.categories || user.categories.length === 0) {
+      user.categories = [
+        { value: 'social', label: 'Social', icon: 'Globe' },
+        { value: 'email', label: 'Email', icon: 'Mail' },
+        { value: 'finance', label: 'Finance', icon: 'Landmark' },
+        { value: 'shopping', label: 'Shopping', icon: 'ShoppingBag' },
+        { value: 'work', label: 'Work', icon: 'Briefcase' },
+        { value: 'entertainment', label: 'Entertainment', icon: 'Gamepad2' },
+        { value: 'other', label: 'Other', icon: 'Key' },
+      ];
+      await user.save();
+    }
+
     res.json(userResponse(user));
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

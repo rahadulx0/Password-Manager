@@ -1,22 +1,38 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Eye, EyeOff, Copy, Star, ExternalLink, Check } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { getIconComponent } from '../utils/categoryIcons';
 import toast from 'react-hot-toast';
 
-const CATEGORY_COLORS = {
-  social: { bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', icon: '🌐' },
-  email: { bg: 'bg-red-100 dark:bg-red-500/10', text: 'text-red-600 dark:text-red-400', icon: '📧' },
-  finance: { bg: 'bg-green-100 dark:bg-green-500/10', text: 'text-green-600 dark:text-green-400', icon: '🏦' },
-  shopping: { bg: 'bg-orange-100 dark:bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', icon: '🛍️' },
-  work: { bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', icon: '💼' },
-  entertainment: { bg: 'bg-pink-100 dark:bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400', icon: '🎮' },
-  other: { bg: 'bg-gray-100 dark:bg-gray-500/10', text: 'text-gray-600 dark:text-gray-400', icon: '🔑' },
-};
+const COLOR_PALETTE = [
+  { bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+  { bg: 'bg-red-100 dark:bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
+  { bg: 'bg-green-100 dark:bg-green-500/10', text: 'text-green-600 dark:text-green-400' },
+  { bg: 'bg-orange-100 dark:bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400' },
+  { bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
+  { bg: 'bg-pink-100 dark:bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400' },
+  { bg: 'bg-teal-100 dark:bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
+  { bg: 'bg-indigo-100 dark:bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400' },
+  { bg: 'bg-yellow-100 dark:bg-yellow-500/10', text: 'text-yellow-600 dark:text-yellow-400' },
+  { bg: 'bg-cyan-100 dark:bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400' },
+];
+
+const FALLBACK = { bg: 'bg-gray-100 dark:bg-gray-500/10', text: 'text-gray-600 dark:text-gray-400', icon: 'Key' };
 
 export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMode, isSelected, onToggleSelect }) {
+  const { user } = useAuth();
   const [showPw, setShowPw] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const cat = CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.other;
+  const cat = useMemo(() => {
+    const categories = user?.categories || [];
+    const idx = categories.findIndex((c) => c.value === entry.category);
+    if (idx === -1) return FALLBACK;
+    const color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
+    return { ...color, icon: categories[idx].icon };
+  }, [user?.categories, entry.category]);
+
+  const CatIcon = getIconComponent(cat.icon);
 
   function copyPassword() {
     navigator.clipboard.writeText(entry.password);
@@ -64,7 +80,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
           {favicon ? (
             <img src={favicon} alt="" className="w-6 h-6 rounded" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
           ) : null}
-          <span className={`text-lg ${favicon ? 'hidden' : ''}`} style={favicon ? { display: 'none' } : {}}>{cat.icon}</span>
+          <CatIcon className={`w-5 h-5 ${cat.text} ${favicon ? 'hidden' : ''}`} style={favicon ? { display: 'none' } : {}} />
         </div>
 
         {/* Info */}
