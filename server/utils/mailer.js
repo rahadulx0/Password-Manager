@@ -1,8 +1,14 @@
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import dns from 'dns';
+
+// Force IPv4 — Render does not support IPv6 outbound connections
+dns.setDefaultResultOrder('ipv4first');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.GMAIL_SMTP_Name,
     pass: process.env.GMAIL_SMTP_Password,
@@ -10,8 +16,6 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 15000,
-  pool: true,
-  maxConnections: 3,
 });
 
 // Verify SMTP connection on startup
