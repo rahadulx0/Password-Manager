@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowRight, ArrowLeft, KeyRound, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';

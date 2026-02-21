@@ -7,6 +7,18 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_SMTP_Name,
     pass: process.env.GMAIL_SMTP_Password,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
+  pool: true,
+  maxConnections: 3,
+});
+
+// Verify SMTP connection on startup
+transporter.verify().then(() => {
+  console.log('SMTP connection verified — ready to send emails');
+}).catch((err) => {
+  console.error('SMTP connection error:', err.message);
 });
 
 export function generateOtp() {

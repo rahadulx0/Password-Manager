@@ -12,7 +12,12 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limiting

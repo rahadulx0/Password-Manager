@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function usePasswords() {
   const { token } = useAuth();
@@ -134,7 +134,7 @@ export function usePasswords() {
   }
 
   async function toggleFavorite(id) {
-    const res = await fetch(`/api/passwords/${id}/favorite`, {
+    const res = await fetch(`${API_URL}/api/passwords/${id}/favorite`, {
       method: 'PATCH',
       headers,
     });
