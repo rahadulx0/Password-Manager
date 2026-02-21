@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   Search, Plus, Key, Star, Shield, Settings as SettingsIcon,
-  Sun, Moon, LogOut, Menu, X, ChevronDown,
+  Sun, Moon, LogOut, Menu, X, ChevronDown, Trash2, CheckSquare,
   ShoppingBag, Mail, Briefcase, Gamepad2, CreditCard, Globe, Lock
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { usePasswords } from '../hooks/usePasswords';
@@ -11,6 +12,7 @@ import PasswordCard from '../components/PasswordCard';
 import PasswordModal from '../components/PasswordModal';
 import PasswordGenerator from '../components/PasswordGenerator';
 import Settings from '../components/Settings';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const CATEGORIES = [
   { value: 'all', label: 'All Items', icon: Key },
@@ -36,7 +38,8 @@ export default function Vault() {
   const {
     allPasswords, passwords, loading, search, setSearch,
     category, setCategory, showFavorites, setShowFavorites,
-    addPassword, updatePassword, deletePassword, toggleFavorite,
+    addPassword, updatePassword, deletePassword, deleteMultiple, toggleFavorite,
+    refresh,
   } = usePasswords();
 
   const [modalEntry, setModalEntry] = useState(null);
@@ -45,6 +48,51 @@ export default function Vault() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCatDropdown, setShowCatDropdown] = useState(false);
   const [desktopSettings, setDesktopSettings] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelected(new Set());
+  }
+
+  function toggleSelect(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === displayPasswords.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(displayPasswords.map((p) => p.id)));
+    }
+  }
+
+  function handleDeleteSelected() {
+    if (selected.size === 0) return;
+    setShowDeleteConfirm(true);
+  }
+
+  async function confirmDeleteSelected() {
+    setDeleteLoading(true);
+    try {
+      const deleted = await deleteMultiple([...selected]);
+      toast.success(`Deleted ${deleted} password${deleted === 1 ? '' : 's'}`);
+      setShowDeleteConfirm(false);
+      exitSelectMode();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   function openNew() {
     setModalEntry(null);
@@ -78,7 +126,7 @@ export default function Vault() {
   const showVaultContent = !showSettingsView && (mobileTab === 'vault' || mobileTab === 'favorites' || typeof window !== 'undefined' && window.innerWidth >= 1024);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-full flex overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 border-r border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] backdrop-blur-xl shrink-0">
         {/* User section */}
@@ -175,9 +223,9 @@ export default function Vault() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0">
         {/* Top bar — hide search/add when showing settings */}
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
+        <header className="shrink-0 z-30 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-3 px-4 py-3">
             {/* Mobile menu button */}
             <button
@@ -187,7 +235,37 @@ export default function Vault() {
               <Menu className="w-5 h-5" />
             </button>
 
-            {!showSettingsView ? (
+            {selectMode ? (
+              <>
+                <button
+                  onClick={exitSelectMode}
+                  className="p-2 -ml-1 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">
+                  {selected.size} selected
+                </span>
+                <button
+                  onClick={toggleSelectAll}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 transition-colors"
+                  title={selected.size === displayPasswords.length ? 'Deselect all' : 'Select all'}
+                >
+                  <CheckSquare className={`w-5 h-5 ${selected.size === displayPasswords.length ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={selected.size === 0 || deleteLoading}
+                  className="p-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+                >
+                  {deleteLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="w-5 h-5" />
+                  )}
+                </button>
+              </>
+            ) : !showSettingsView ? (
               <>
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -261,9 +339,9 @@ export default function Vault() {
         </header>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto pb-24 lg:pb-6">
+        <div className="flex-1 min-h-0 overflow-y-auto pb-24 lg:pb-6 overscroll-contain">
           {showSettingsView ? (
-            <Settings passwords={allPasswords} favoritePasswords={allFavorites} />
+            <Settings passwords={allPasswords} favoritePasswords={allFavorites} onRefresh={refresh} />
           ) : showVaultContent ? (
             <div className="p-4 space-y-2 max-w-2xl mx-auto w-full">
               {/* Section header */}
@@ -271,9 +349,19 @@ export default function Vault() {
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                   {mobileTab === 'favorites' ? 'Favorites' : showFavorites ? 'Favorites' : currentCategory?.label || 'All Items'}
                 </h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {displayPasswords.length} {displayPasswords.length === 1 ? 'item' : 'items'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {!selectMode && displayPasswords.length > 0 && (
+                    <button
+                      onClick={() => setSelectMode(true)}
+                      className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      Select
+                    </button>
+                  )}
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {displayPasswords.length} {displayPasswords.length === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
               </div>
 
               {loading ? (
@@ -320,6 +408,9 @@ export default function Vault() {
                       entry={entry}
                       onEdit={openEdit}
                       onToggleFavorite={toggleFavorite}
+                      selectMode={selectMode}
+                      isSelected={selected.has(entry.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ))}
                 </div>
@@ -427,6 +518,19 @@ export default function Vault() {
           onSave={handleSave}
           onDelete={deletePassword}
           onToggleFavorite={toggleFavorite}
+        />
+      )}
+
+      {/* Bulk delete confirmation */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Passwords"
+          message={`${selected.size} password${selected.size === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`}
+          confirmLabel="Delete"
+          variant="danger"
+          loading={deleteLoading}
+          onConfirm={confirmDeleteSelected}
+          onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
     </div>

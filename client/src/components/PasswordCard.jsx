@@ -12,7 +12,7 @@ const CATEGORY_COLORS = {
   other: { bg: 'bg-gray-100 dark:bg-gray-500/10', text: 'text-gray-600 dark:text-gray-400', icon: '🔑' },
 };
 
-export default function PasswordCard({ entry, onEdit, onToggleFavorite }) {
+export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMode, isSelected, onToggleSelect }) {
   const [showPw, setShowPw] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -40,10 +40,25 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite }) {
 
   return (
     <div
-      className="glass-card p-4 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.99]"
-      onClick={() => onEdit(entry)}
+      className={`glass-card p-4 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.99] ${
+        selectMode && isSelected ? 'ring-2 ring-primary-500 bg-primary-50/50 dark:bg-primary-500/5' : ''
+      }`}
+      onClick={() => selectMode ? onToggleSelect(entry.id) : onEdit(entry)}
     >
       <div className="flex items-center gap-3">
+        {/* Select checkbox */}
+        {selectMode && (
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+            isSelected
+              ? 'bg-primary-600 border-primary-600'
+              : 'border-gray-300 dark:border-gray-600'
+          }`}>
+            {isSelected && (
+              <Check className="w-3.5 h-3.5 text-white" />
+            )}
+          </div>
+        )}
+
         {/* Icon */}
         <div className={`w-11 h-11 rounded-xl ${cat.bg} flex items-center justify-center shrink-0`}>
           {favicon ? (
@@ -64,7 +79,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite }) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        {!selectMode && <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={copyPassword}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -79,7 +94,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite }) {
           >
             {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Password preview */}

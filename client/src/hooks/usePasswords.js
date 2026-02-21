@@ -100,6 +100,21 @@ export function usePasswords() {
     setAllPasswords((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function deleteMultiple(ids) {
+    const res = await fetch('/api/passwords/batch', {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+    const { deleted } = await res.json();
+    setAllPasswords((prev) => prev.filter((p) => !ids.includes(p.id)));
+    return deleted;
+  }
+
   async function toggleFavorite(id) {
     const res = await fetch(`/api/passwords/${id}/favorite`, {
       method: 'PATCH',
@@ -125,6 +140,7 @@ export function usePasswords() {
     addPassword,
     updatePassword,
     deletePassword,
+    deleteMultiple,
     toggleFavorite,
     refresh: fetchPasswords,
   };

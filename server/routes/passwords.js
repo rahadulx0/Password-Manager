@@ -43,6 +43,57 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Export all passwords (decrypted, Google CSV-compatible fields)
+router.get('/export', async (req, res) => {
+  try {
+    const passwords = await Password.find({ user: req.userId }).sort({ updatedAt: -1 });
+
+    const exported = passwords.map((p) => ({
+      name: p.title,
+      url: p.website || '',
+      username: p.username || '',
+      password: decrypt(p.password),
+      note: p.notes ? decrypt(p.notes) : '',
+    }));
+
+    res.json(exported);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Bulk import passwords
+router.post('/import', async (req, res) => {
+  try {
+    const { passwords } = req.body;
+
+    if (!Array.isArray(passwords) || passwords.length === 0) {
+      return res.status(400).json({ message: 'No passwords to import' });
+    }
+
+    const valid = passwords
+      .filter((p) => p.title && p.password)
+      .map((p) => ({
+        user: req.userId,
+        title: p.title,
+        website: p.website || '',
+        username: p.username || '',
+        password: encrypt(p.password),
+        notes: p.notes ? encrypt(p.notes) : '',
+        category: 'other',
+      }));
+
+    if (valid.length === 0) {
+      return res.status(400).json({ message: 'No valid passwords found (title and password are required)' });
+    }
+
+    await Password.insertMany(valid);
+    res.status(201).json({ imported: valid.length });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get single password
 router.get('/:id', async (req, res) => {
   try {
@@ -132,6 +183,22 @@ router.put('/:id', async (req, res) => {
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
     });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Bulk delete passwords
+router.delete('/batch', async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'No passwords to delete' });
+    }
+
+    const result = await Password.deleteMany({ _id: { $in: ids }, user: req.userId });
+    res.json({ deleted: result.deletedCount });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

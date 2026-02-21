@@ -190,7 +190,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="h-full overflow-y-auto flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-slide-up">
         {/* Header */}
         <div className="text-center mb-8">

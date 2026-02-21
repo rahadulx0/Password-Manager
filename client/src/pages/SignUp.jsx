@@ -175,7 +175,7 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="h-full overflow-y-auto flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-slide-up">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-4 shadow-lg shadow-primary-600/30">

@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import {
   User, AtSign, Mail, Lock, Shield, ShieldCheck, ShieldOff,
   Eye, EyeOff, Sun, Moon, LogOut, Trash2, Pencil, X, Check,
-  ArrowRight, AlertTriangle,
+  ArrowRight, AlertTriangle, Download, Upload,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
-export default function Settings({ passwords, favoritePasswords }) {
+export default function Settings({ passwords, favoritePasswords, onRefresh }) {
   const { user, token, logout, updateUser } = useAuth();
   const { dark, toggle } = useTheme();
 
@@ -49,6 +50,12 @@ export default function Settings({ passwords, favoritePasswords }) {
   const [deletePw, setDeletePw] = useState('');
   const [showDeletePw, setShowDeletePw] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Import/Export
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [pendingImport, setPendingImport] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Email OTP resend cooldown
   useEffect(() => {
@@ -288,6 +295,166 @@ export default function Settings({ passwords, favoritePasswords }) {
     } finally {
       setDeleteLoading(false);
     }
+  }
+
+  // ─── Export ────────────────────────────────────────────
+
+  async function handleExport() {
+    setExportLoading(true);
+    try {
+      const res = await fetch('/api/passwords/export', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const data = await res.json();
+
+      if (data.length === 0) {
+        toast.error('No passwords to export');
+        return;
+      }
+
+      const escapeCsv = (val) => {
+        const str = String(val ?? '');
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const header = 'name,url,username,password,note';
+      const rows = data.map((row) =>
+        [row.name, row.url, row.username, row.password, row.note].map(escapeCsv).join(',')
+      );
+      const csv = [header, ...rows].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const date = new Date().toISOString().split('T')[0];
+      a.download = `vault-export-${date}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${data.length} passwords`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  // ─── Import ────────────────────────────────────────────
+
+  function handleImportClick() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so re-selecting the same file triggers onChange again
+    e.target.value = '';
+
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((line) => line.trim());
+
+      if (lines.length < 2) {
+        toast.error('CSV file is empty or has no data rows');
+        return;
+      }
+
+      // Parse header to find column indices
+      const headerLine = lines[0];
+      const headers = parseCsvLine(headerLine).map((h) => h.toLowerCase().trim());
+      const nameIdx = headers.indexOf('name');
+      const urlIdx = headers.indexOf('url');
+      const usernameIdx = headers.indexOf('username');
+      const passwordIdx = headers.indexOf('password');
+      const noteIdx = headers.indexOf('note');
+
+      if (nameIdx === -1 || passwordIdx === -1) {
+        toast.error('CSV must have "name" and "password" columns');
+        return;
+      }
+
+      const passwords = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i]);
+        const title = cols[nameIdx]?.trim();
+        const password = cols[passwordIdx]?.trim();
+        if (!title || !password) continue;
+        passwords.push({
+          title,
+          website: urlIdx !== -1 ? cols[urlIdx]?.trim() || '' : '',
+          username: usernameIdx !== -1 ? cols[usernameIdx]?.trim() || '' : '',
+          password,
+          notes: noteIdx !== -1 ? cols[noteIdx]?.trim() || '' : '',
+        });
+      }
+
+      if (passwords.length === 0) {
+        toast.error('No valid entries found in CSV');
+        return;
+      }
+
+      setPendingImport(passwords);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function confirmImport() {
+    if (!pendingImport) return;
+    setImportLoading(true);
+    try {
+      const res = await fetch('/api/passwords/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ passwords: pendingImport }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast.success(`Imported ${data.imported} password${data.imported === 1 ? '' : 's'}`);
+      setPendingImport(null);
+      onRefresh?.();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  function parseCsvLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          result.push(current);
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+    }
+    result.push(current);
+    return result;
   }
 
   // ─── Password input helper ─────────────────────────────
@@ -656,6 +823,55 @@ export default function Settings({ passwords, favoritePasswords }) {
         </div>
       </div>
 
+      {/* ─── Data ─── */}
+      <div className="glass-card overflow-hidden">
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Data</p>
+        </div>
+        <div className="divide-y divide-gray-200 dark:divide-white/10">
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div className="text-left">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Export Passwords</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Download as CSV (Google format)</span>
+              </div>
+            </div>
+            {exportLoading && (
+              <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-primary-600 rounded-full animate-spin" />
+            )}
+          </button>
+
+          <button
+            onClick={handleImportClick}
+            disabled={importLoading}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <Upload className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div className="text-left">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Import Passwords</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">From CSV file (Google format)</span>
+              </div>
+            </div>
+            {importLoading && (
+              <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-primary-600 rounded-full animate-spin" />
+            )}
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+
       {/* ─── Appearance ─── */}
       <div className="glass-card overflow-hidden">
         <button
@@ -734,6 +950,19 @@ export default function Settings({ passwords, favoritePasswords }) {
           </button>
         </div>
       </div>
+
+      {/* Import confirmation dialog */}
+      {pendingImport && (
+        <ConfirmDialog
+          title="Import Passwords"
+          message={`${pendingImport.length} password${pendingImport.length === 1 ? '' : 's'} found in the CSV file. They will be added to your vault.`}
+          confirmLabel={importLoading ? 'Importing...' : 'Import'}
+          variant="default"
+          loading={importLoading}
+          onConfirm={confirmImport}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
     </div>
   );
 }
