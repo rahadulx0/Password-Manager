@@ -99,7 +99,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Title *</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Title *</label>
             <input
               type="text"
               value={form.title}
@@ -112,7 +112,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
 
           {/* Website */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Website</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Website</label>
             <input
               type="text"
               value={form.website}
@@ -124,7 +124,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
 
           {/* Username */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Username / Email</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Username / Email</label>
             <input
               type="text"
               value={form.username}
@@ -136,7 +136,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Password *</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Password *</label>
             <div className="relative">
               <input
                 type={showPw ? 'text' : 'password'}
@@ -180,7 +180,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Category</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Category</label>
             <div className="grid grid-cols-4 gap-2">
               {CATEGORIES.map((cat) => {
                 const Icon = getIconComponent(cat.icon);
@@ -205,7 +205,7 @@ export default function PasswordModal({ entry, onClose, onSave, onDelete, onTogg
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => handleChange('notes', e.target.value)}

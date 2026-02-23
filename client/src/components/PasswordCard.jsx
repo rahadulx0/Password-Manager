@@ -56,7 +56,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
 
   return (
     <div
-      className={`glass-card rounded-full py-3 px-5 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.99] ${
+      className={`glass-card rounded-2xl py-3 px-5 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.98] ${
         selectMode && isSelected ? 'ring-2 ring-primary-500 bg-primary-50/50 dark:bg-primary-500/5' : ''
       }`}
       onClick={() => selectMode ? onToggleSelect(entry.id) : onEdit(entry)}
@@ -99,7 +99,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
         {!selectMode && <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={copyPassword}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 active:scale-90 transition-all"
             title="Copy password"
           >
             {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}

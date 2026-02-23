@@ -17,7 +17,7 @@ const OPTION_LABELS = {
 };
 
 function getStrength(pw, options) {
-  if (!pw) return { label: '', percent: 0, color: 'bg-gray-300 dark:bg-gray-600' };
+  if (!pw) return { label: '', level: 0, color: 'bg-gray-300 dark:bg-gray-600' };
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
@@ -28,10 +28,10 @@ function getStrength(pw, options) {
   if (activeOpts >= 3) score++;
   if (activeOpts >= 4) score++;
 
-  if (score <= 2) return { label: 'Weak', percent: 25, color: 'bg-red-500' };
-  if (score <= 4) return { label: 'Fair', percent: 50, color: 'bg-orange-500' };
-  if (score <= 5) return { label: 'Strong', percent: 75, color: 'bg-yellow-500' };
-  return { label: 'Very Strong', percent: 100, color: 'bg-green-500' };
+  if (score <= 2) return { label: 'Weak', level: 1, color: 'bg-red-500' };
+  if (score <= 4) return { label: 'Fair', level: 2, color: 'bg-orange-500' };
+  if (score <= 5) return { label: 'Strong', level: 3, color: 'bg-yellow-500' };
+  return { label: 'Very Strong', level: 4, color: 'bg-green-500' };
 }
 
 function colorChar(ch) {
@@ -114,18 +114,20 @@ export default function PasswordGenerator({ onUse, compact = false }) {
           </div>
         </div>
 
-        {/* Strength bar */}
+        {/* Segmented strength bar (4 segments) */}
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${strength.color}`}
-              style={{ width: `${strength.percent}%` }}
-            />
+          <div className="strength-segments flex-1">
+            {[1, 2, 3, 4].map((seg) => (
+              <div
+                key={seg}
+                className={`segment ${seg <= strength.level ? strength.color : ''}`}
+              />
+            ))}
           </div>
           <span className={`text-xs font-semibold shrink-0 ${
-            strength.percent <= 25 ? 'text-red-500' :
-            strength.percent <= 50 ? 'text-orange-500' :
-            strength.percent <= 75 ? 'text-yellow-600 dark:text-yellow-400' :
+            strength.level <= 1 ? 'text-red-500' :
+            strength.level <= 2 ? 'text-orange-500' :
+            strength.level <= 3 ? 'text-yellow-600 dark:text-yellow-400' :
             'text-green-500'
           }`}>
             {strength.label}
@@ -159,7 +161,7 @@ export default function PasswordGenerator({ onUse, compact = false }) {
           max={64}
           value={length}
           onChange={(e) => setLength(Number(e.target.value))}
-          className="w-full accent-primary-600 h-1.5 cursor-pointer"
+          className="ios-slider w-full"
         />
         <div className="flex justify-between mt-0.5">
           <span className="text-[10px] text-gray-400">4</span>
@@ -167,7 +169,7 @@ export default function PasswordGenerator({ onUse, compact = false }) {
         </div>
       </div>
 
-      {/* Character options */}
+      {/* Character options - pill toggles */}
       <div className={`grid ${compact ? 'grid-cols-2' : 'grid-cols-4'} gap-1.5`}>
         {Object.entries(options).map(([key, enabled]) => (
           <button
@@ -178,24 +180,23 @@ export default function PasswordGenerator({ onUse, compact = false }) {
               if (enabled && activeCount <= 1) return;
               setOptions((o) => ({ ...o, [key]: !o[key] }));
             }}
-            className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-xs font-semibold transition-all
+            className={`py-2 px-3 rounded-full text-sm font-semibold transition-all
               ${enabled
-                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-500/20'
-                : 'bg-gray-50 dark:bg-white/5 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-white/10'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500'
               }`}
           >
-            <span className="text-sm">{OPTION_LABELS[key]}</span>
-            <span className={`text-[10px] capitalize ${enabled ? 'text-primary-500 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'}`}>{key}</span>
+            {OPTION_LABELS[key]}
           </button>
         ))}
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons - pill shape */}
       {onUse ? (
         <div className="flex gap-2">
           <button
             onClick={generate}
-            className="btn-secondary flex-1 flex items-center justify-center gap-2 text-sm py-2.5"
+            className="btn-secondary flex-1 flex items-center justify-center gap-2 text-sm py-2.5 !rounded-full"
           >
             <RefreshCw className="w-4 h-4" />
             Regenerate
@@ -203,7 +204,7 @@ export default function PasswordGenerator({ onUse, compact = false }) {
           <button
             onClick={() => onUse(generated)}
             disabled={!generated}
-            className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5"
+            className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5 !rounded-full"
           >
             <Zap className="w-4 h-4" />
             Use
@@ -213,7 +214,7 @@ export default function PasswordGenerator({ onUse, compact = false }) {
         <button
           onClick={copyToClipboard}
           disabled={!generated}
-          className="btn-primary w-full flex items-center justify-center gap-2 text-sm py-2.5"
+          className="btn-primary w-full flex items-center justify-center gap-2 text-sm py-2.5 !rounded-full"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? 'Copied!' : 'Copy Password'}
