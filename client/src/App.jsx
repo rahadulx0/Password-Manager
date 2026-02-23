@@ -4,9 +4,10 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
 import Vault from './pages/Vault';
+import LockScreen from './components/LockScreen';
 
 function ProtectedRoute({ children }) {
-  const { token, loading } = useAuth();
+  const { token, loading, locked } = useAuth();
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -14,7 +15,9 @@ function ProtectedRoute({ children }) {
       </div>
     );
   }
-  return token ? children : <Navigate to="/signin" replace />;
+  if (!token) return <Navigate to="/signin" replace />;
+  if (locked) return <LockScreen />;
+  return children;
 }
 
 function GuestRoute({ children }) {

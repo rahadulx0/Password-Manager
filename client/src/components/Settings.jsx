@@ -7,12 +7,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL || '';
 import { useTheme } from '../context/ThemeContext';
+import { Clock } from 'lucide-react';
 import { ICON_MAP, ICON_NAMES, getIconComponent } from '../utils/categoryIcons';
 import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
 export default function Settings({ passwords, favoritePasswords, onRefresh }) {
-  const { user, token, logout, updateUser } = useAuth();
+  const { user, token, logout, updateUser, lockTimeout, setLockTimeout } = useAuth();
   const { dark, toggle, accent, setAccent } = useTheme();
 
   // Profile edit
@@ -781,6 +782,37 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
             )}
           </div>
 
+        </div>
+      </div>
+
+      {/* ─── Security ─── */}
+      <div className="glass-card overflow-hidden">
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Security</p>
+        </div>
+        <div className="p-4 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Auto-Lock</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">Lock after inactivity</span>
+              </div>
+            </div>
+            <select
+              value={lockTimeout}
+              onChange={(e) => setLockTimeout(Number(e.target.value))}
+              className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all cursor-pointer"
+            >
+              <option value={1}>1 min</option>
+              <option value={5}>5 min</option>
+              <option value={10}>10 min</option>
+              <option value={15}>15 min</option>
+              <option value={30}>30 min</option>
+              <option value={60}>1 hour</option>
+              <option value={0}>Never</option>
+            </select>
+          </div>
         </div>
       </div>
 

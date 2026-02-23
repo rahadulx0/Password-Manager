@@ -8,6 +8,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
+  const [lockTimeout, setLockTimeoutState] = useState(() => {
+    const saved = localStorage.getItem('lockTimeout');
+    return saved !== null ? Number(saved) : 15;
+  });
 
   useEffect(() => {
     if (token) {
@@ -39,6 +44,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(userData);
+    setLocked(false);
   }
 
   function updateUser(userData) {
@@ -49,20 +55,34 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    setLocked(false);
   }, []);
 
-  // Auto-logout after 15 minutes of inactivity
-  useEffect(() => {
-    if (!token) return;
+  const lock = useCallback(() => {
+    setLocked(true);
+  }, []);
 
-    const TIMEOUT = 15 * 60 * 1000;
+  const unlock = useCallback(() => {
+    setLocked(false);
+  }, []);
+
+  function setLockTimeout(minutes) {
+    setLockTimeoutState(minutes);
+    localStorage.setItem('lockTimeout', String(minutes));
+  }
+
+  // Auto-lock after configured minutes of inactivity (0 = never)
+  useEffect(() => {
+    if (!token || lockTimeout === 0) return;
+
+    const TIMEOUT = lockTimeout * 60 * 1000;
     let timer;
 
     function resetTimer() {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        logout('inactivity');
-        toast('Logged out due to inactivity');
+        lock();
+        toast('Locked due to inactivity');
       }, TIMEOUT);
     }
 
@@ -74,10 +94,10 @@ export function AuthProvider({ children }) {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, resetTimer));
     };
-  }, [token, logout]);
+  }, [token, lockTimeout, lock]);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, fetchUser, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, fetchUser, updateUser, locked, lock, unlock, lockTimeout, setLockTimeout }}>
       {children}
     </AuthContext.Provider>
   );

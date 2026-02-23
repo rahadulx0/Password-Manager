@@ -314,6 +314,31 @@ router.delete('/categories/:value', async (req, res) => {
   }
 });
 
+// ─── Verify Password (for lock screen) ──────────────────
+
+router.post('/verify-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
+    res.json({ message: 'Password verified' });
+  } catch (err) {
+    console.error('Verify password error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ─── Delete Account ─────────────────────────────────────
 
 router.delete('/account', async (req, res) => {

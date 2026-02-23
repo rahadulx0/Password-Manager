@@ -56,7 +56,7 @@ export default function PasswordCard({ entry, onEdit, onToggleFavorite, selectMo
 
   return (
     <div
-      className={`glass-card rounded-2xl py-3 px-5 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.98] ${
+      className={`glass-card rounded-full py-3 px-5 hover:shadow-md transition-all duration-200 cursor-pointer animate-fade-in active:scale-[0.98] ${
         selectMode && isSelected ? 'ring-2 ring-primary-500 bg-primary-50/50 dark:bg-primary-500/5' : ''
       }`}
       onClick={() => selectMode ? onToggleSelect(entry.id) : onEdit(entry)}

@@ -501,8 +501,9 @@ export default function Vault() {
               )}
             </div>
           ) : mobileTab === 'generator' ? (
-            <div className="p-4 max-w-md mx-auto w-full">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Password Generator</h2>
+            <div className="p-4 max-w-lg mx-auto w-full">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Password Generator</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Generate secure passwords or passphrases</p>
               <div className="glass-card p-5">
                 <PasswordGenerator />
               </div>
