@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import {
   User, AtSign, Mail, Lock,
   Eye, EyeOff, Sun, Moon, LogOut, Trash2, Pencil, X, Check,
-  ArrowRight, AlertTriangle, Download, Upload, Plus, Tag, ChevronDown,
+  ArrowRight, AlertTriangle, Download, Upload, Plus, Tag, ChevronDown, ScanFace,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL || '';
 import { useTheme } from '../context/ThemeContext';
 import { Clock } from 'lucide-react';
 import { ICON_MAP, ICON_NAMES, getIconComponent } from '../utils/categoryIcons';
+import { isBiometricAvailable, registerBiometric, disableBiometric } from '../utils/webauthn';
 import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
@@ -63,6 +64,15 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
   const [newCatIcon, setNewCatIcon] = useState('');
   const [catLoading, setCatLoading] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(null); // value of category armed for delete
+
+  // Biometric
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  // Check biometric availability on mount
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometricSupported);
+  }, []);
 
   // Email OTP resend cooldown
   useEffect(() => {
@@ -813,6 +823,53 @@ export default function Settings({ passwords, favoritePasswords, onRefresh }) {
               <option value={0}>Never</option>
             </select>
           </div>
+
+          {/* Biometric Unlock */}
+          {biometricSupported && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-3">
+                <ScanFace className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Biometric Unlock</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Use fingerprint or Face ID</span>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  setBiometricLoading(true);
+                  try {
+                    if (user?.biometricEnabled) {
+                      const result = await disableBiometric(token);
+                      updateUser(result.user);
+                      toast.success('Biometric unlock disabled');
+                    } else {
+                      const result = await registerBiometric(token);
+                      updateUser(result.user);
+                      toast.success('Biometric unlock enabled');
+                    }
+                  } catch (err) {
+                    if (err.name !== 'NotAllowedError') {
+                      toast.error(err.message || 'Biometric setup failed');
+                    }
+                  } finally {
+                    setBiometricLoading(false);
+                  }
+                }}
+                disabled={biometricLoading}
+                className="relative"
+              >
+                {biometricLoading ? (
+                  <div className="w-12 h-7 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-primary-600 rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className={`w-12 h-7 rounded-full p-1 transition-colors ${user?.biometricEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-white/10'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${user?.biometricEnabled ? 'translate-x-5' : ''}`} />
+                  </div>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

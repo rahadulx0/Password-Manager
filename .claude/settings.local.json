@@ -13,7 +13,9 @@
       "Bash(taskkill:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
-      "Bash(fuser:*)"
+      "Bash(fuser:*)",
+      "WebSearch",
+      "Bash(cd \"D:\\\\Github Repos\\\\Password-Manager\\\\client\" && npm run build 2>&1)"
     ]
   }
 }

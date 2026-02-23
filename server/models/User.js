@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema({
     label: { type: String, required: true },
     icon: { type: String, required: true },
   }],
+  webauthnCredentials: [{
+    credentialID: String,
+    credentialPublicKey: String,
+    counter: Number,
+    transports: [String],
+    createdAt: Date,
+  }],
 }, { timestamps: true });
 
 const DEFAULT_CATEGORIES = [

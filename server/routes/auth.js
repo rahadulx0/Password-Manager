@@ -18,6 +18,7 @@ function userResponse(user) {
     username: user.username,
     email: user.email,
     categories: user.categories || [],
+    biometricEnabled: (user.webauthnCredentials || []).length > 0,
   };
 }
 
